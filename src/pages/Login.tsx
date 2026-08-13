@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Fingerprint, Mail, Lock, Eye, EyeOff, ShieldCheck, ScanFace, KeyRound } from 'lucide-react';
+import { Fingerprint, Mail, Lock, Eye, EyeOff, ShieldCheck, ScanFace, KeyRound, ShieldEllipsis } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -15,6 +15,10 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Portal na pinipili: student o admin — nagbabago lang ang UI/labels,
+  // pareho pa rin ang signIn logic (base sa role sa DB ang tunay na access).
+  const [portal, setPortal] = useState<'student' | 'admin'>('student');
 
   const [mode, setMode] = useState<'password' | 'face'>('password');
   const [faceLoading, setFaceLoading] = useState(false);
@@ -64,12 +68,17 @@ export default function Login() {
     }
   }
 
+  function switchPortal(next: 'student' | 'admin') {
+    setPortal(next);
+    setMode('password');
+    setEmail('');
+    setPassword('');
+  }
+
+  const isAdminPortal = portal === 'admin';
+
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-white">
-      {/* Full-bleed photo background, kaliwa at kanan ng card.
-          PALITAN MO ITONG DALAWANG bg-[url(...)] ng sarili niyong campus
-          photo, hal. bg-[url('/images/campus.jpg')] bg-cover bg-center.
-          Ginamit muna dito ang gradient placeholder. */}
       <div className="absolute inset-0 grid grid-cols-1 md:grid-cols-2">
         <div
           className="hidden bg-cover bg-center md:block"
@@ -87,40 +96,46 @@ export default function Login() {
         />
       </div>
 
-      {/* Login card — walang border/shadow, lumulutang lang sa ibabaw ng
-          background, katulad ng reference design */}
       <div className="relative z-10 w-full max-w-sm rounded-lg bg-white px-8 py-10">
         <div className="flex flex-col items-center text-center">
-          <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-600 text-white">
-            <Fingerprint size={30} />
+          <div
+            className={`mb-3 flex h-16 w-16 items-center justify-center rounded-2xl text-white transition-colors ${
+              isAdminPortal ? 'bg-ink-900' : 'bg-primary-600'
+            }`}
+          >
+            {isAdminPortal ? <ShieldEllipsis size={30} /> : <Fingerprint size={30} />}
           </div>
           <h1 className="text-xl font-extrabold tracking-tight text-gray-900">BIOATTEND</h1>
-          <p className="mt-1 text-xs text-gray-500">Smart Biometric Attendance Manager</p>
+          <p className="mt-1 text-xs text-gray-500">
+            {isAdminPortal ? 'Admin Portal Access' :'Student Biometrics Attendamce'}
+          </p>
         </div>
 
-        {/* Mode toggle */}
-        <div className="mt-6 flex rounded-lg bg-gray-100 p-1 text-sm font-semibold">
-          <button
-            type="button"
-            onClick={() => setMode('password')}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 transition-colors ${
-              mode === 'password' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500'
-            }`}
-          >
-            <KeyRound size={15} /> Password
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('face')}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 transition-colors ${
-              mode === 'face' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500'
-            }`}
-          >
-            <ScanFace size={15} /> Face Login
-          </button>
-        </div>
+        {/* Password / Face toggle — student lang, wala sa admin portal */}
+        {!isAdminPortal && (
+          <div className="mt-6 flex rounded-lg bg-gray-100 p-1 text-sm font-semibold">
+            <button
+              type="button"
+              onClick={() => setMode('password')}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 transition-colors ${
+                mode === 'password' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500'
+              }`}
+            >
+              <KeyRound size={15} /> Password
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('face')}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 transition-colors ${
+                mode === 'face' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500'
+              }`}
+            >
+              <ScanFace size={15} /> Face Login
+            </button>
+          </div>
+        )}
 
-        {mode === 'password' ? (
+        {(isAdminPortal || mode === 'password') ? (
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div className="relative">
               <Mail size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -129,7 +144,7 @@ export default function Login() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Corporate Email Address"
+                placeholder={isAdminPortal ? 'Admin Email Address' : 'Student Email Address'}
                 className="w-full rounded-md border border-gray-300 bg-white py-3 pl-9 pr-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               />
             </div>
@@ -162,26 +177,41 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-md bg-gradient-to-r from-primary-700 to-primary-900 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              className={`w-full rounded-md py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 ${
+                isAdminPortal
+                  ? 'bg-gradient-to-r from-ink-900 to-gray-700'
+                  : 'bg-gradient-to-r from-primary-700 to-primary-900'
+              }`}
             >
-              {loading ? 'Signing in…' : 'Sign In to Dashboard'}
+              {loading ? 'Signing in…' : isAdminPortal ? 'Sign In to Admin Console' : 'Sign In to Dashboard'}
             </button>
 
-            <label className="flex items-center justify-center gap-2 text-xs text-gray-500">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              Remember computer
-            </label>
+            {!isAdminPortal && (
+              <label className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                Remember computer
+              </label>
+            )}
 
             <div className="rounded-md bg-primary-50 p-3 text-xs text-primary-900">
               <p className="mb-1 font-semibold">Instructions</p>
               <ol className="list-inside list-decimal space-y-1">
-                <li>Gamitin ang iyong corporate email at binigay na passphrase.</li>
-                <li>Kontakin ang IT admin kung nahihirapan kang mag-log in.</li>
+                {isAdminPortal ? (
+                  <>
+                    <li>Gamitin lamang ang opisyal na admin credentials.</li>
+                    <li>Bawal ibahagi ang admin passphrase sa iba.</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Gamitin ang iyong corporate email at binigay na passphrase.</li>
+                    <li>Kontakin ang IT admin kung nahihirapan kang mag-log in.</li>
+                  </>
+                )}
               </ol>
             </div>
           </form>
@@ -195,6 +225,27 @@ export default function Login() {
             </div>
           </div>
         )}
+
+        {/* Toggle papunta/pabalik sa admin portal */}
+        <div className="mt-5 text-center text-xs text-gray-500">
+          {isAdminPortal ? (
+            <button
+              type="button"
+              onClick={() => switchPortal('student')}
+              className="font-semibold text-primary-700 hover:underline"
+            >
+              ← Balik sa Student Login
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => switchPortal('admin')}
+              className="font-semibold text-gray-600 hover:underline"
+            >
+              Admin? Sign in here →
+            </button>
+          )}
+        </div>
 
         <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-gray-400">
           <ShieldCheck size={14} className="text-primary-600" />
