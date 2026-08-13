@@ -4,7 +4,7 @@ import type { AuditLog } from '../types';
 export async function getAuditLogs(limit = 50) {
   const { data, error } = await supabase
     .from('audit_logs')
-    .select('*, employee:employees(*)')
+    .select('*, student:students(*)')
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) throw error;

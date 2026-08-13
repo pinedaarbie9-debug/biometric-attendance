@@ -1,19 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { createDepartment, deleteDepartment, getDepartments } from '../services/departmentService';
+import { createDepartment, deleteDepartment, getDepartments, getStudentsByDepartment } from '../services/departmentService';
 import type { Department } from '../types';
+
+type StudentLite = { id: string; full_name: string };
 
 export default function DepartmentManagement() {
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [studentsByDept, setStudentsByDept] = useState<Record<string, StudentLite[]>>({});
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
-    setDepartments(await getDepartments());
+    const [depts, students] = await Promise.all([getDepartments(), getStudentsByDepartment()]);
+    setDepartments(depts);
+    setStudentsByDept(students);
     setLoading(false);
   }
 
@@ -65,19 +71,44 @@ export default function DepartmentManagement() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {loading && <p className="text-sm text-gray-400">Loading…</p>}
         {!loading && departments.length === 0 && <p className="text-sm text-gray-400">No departments yet.</p>}
-        {departments.map((d) => (
-          <div key={d.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-900">{d.name}</h3>
-                {d.description && <p className="mt-1 text-xs text-gray-500">{d.description}</p>}
+        {departments.map((d) => {
+          const students = studentsByDept[d.id] ?? [];
+          const isOpen = expanded === d.id;
+          return (
+            <div key={d.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900">{d.name}</h3>
+                  {d.description && <p className="mt-1 text-xs text-gray-500">{d.description}</p>}
+                </div>
+                <button onClick={() => handleDelete(d.id)} className="text-gray-300 hover:text-red-500">
+                  <Trash2 size={16} />
+                </button>
               </div>
-              <button onClick={() => handleDelete(d.id)} className="text-gray-300 hover:text-red-500">
-                <Trash2 size={16} />
+
+              <button
+                onClick={() => setExpanded(isOpen ? null : d.id)}
+                className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-primary-600 hover:text-primary-700"
+              >
+                <Users size={14} />
+                {students.length} student{students.length !== 1 ? 's' : ''}
               </button>
+
+              {isOpen && (
+                <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto border-t border-gray-100 pt-2">
+                  {students.length === 0 && (
+                    <li className="text-xs text-gray-400">No students assigned yet.</li>
+                  )}
+                  {students.map((s) => (
+                    <li key={s.id} className="truncate text-xs text-gray-700">
+                      {s.full_name}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </DashboardLayout>
   );

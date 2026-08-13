@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Plus, Filter, X } from 'lucide-react';
+import { Plus, Filter, X, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import Badge from '../components/common/Badge';
-import { getEmployees, inviteEmployee } from '../services/employeeService';
+import { getEmployees, inviteEmployee, updateEmployee } from '../services/employeeService';
 import { getDepartments } from '../services/departmentService';
 import type { Department, Student } from '../types';
 
@@ -12,6 +12,7 @@ export default function StudentDirectory() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deptFilter, setDeptFilter] = useState<string>('all');
 
   async function load() {
@@ -70,14 +71,15 @@ export default function StudentDirectory() {
                 <th className="px-4 py-3">Role Title</th>
                 <th className="px-4 py-3">Biometric Status</th>
                 <th className="px-4 py-3">Last Verification</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
               )}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No students found.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No students found.</td></tr>
               )}
               {filtered.map((stu) => (
                 <tr key={stu.id} className="hover:bg-gray-50/60">
@@ -102,6 +104,16 @@ export default function StudentDirectory() {
                       ? new Date(stu.last_verified_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
                       : '—'}
                   </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={() => setEditingStudent(stu)}
+                      className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-primary-600"
+                      aria-label="Edit student"
+                      title="Edit"
+                    >
+                      <Pencil size={16} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -115,6 +127,18 @@ export default function StudentDirectory() {
           onClose={() => setShowAddModal(false)}
           onCreated={() => {
             setShowAddModal(false);
+            load();
+          }}
+        />
+      )}
+
+      {editingStudent && (
+        <EditStudentModal
+          student={editingStudent}
+          departments={departments}
+          onClose={() => setEditingStudent(null)}
+          onSaved={() => {
+            setEditingStudent(null);
             load();
           }}
         />
@@ -183,6 +207,67 @@ function AddStudentModal({
           <button type="submit" disabled={saving}
             className="w-full rounded-lg bg-primary-600 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60">
             {saving ? 'Adding…' : 'Add Student'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function EditStudentModal({
+  student,
+  departments,
+  onClose,
+  onSaved,
+}: {
+  student: Student;
+  departments: Department[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [fullName, setFullName] = useState(student.full_name);
+  const [roleTitle, setRoleTitle] = useState(student.role_title ?? '');
+  const [departmentId, setDepartmentId] = useState(student.department_id ?? '');
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await updateEmployee(student.id, {
+        full_name: fullName,
+        role_title: roleTitle || undefined,
+        department_id: departmentId || null,
+      });
+      toast.success('Student updated');
+      onSaved();
+    } catch (err: any) {
+      toast.error(err.message ?? 'Failed to update student');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-base font-bold text-gray-900">Edit Student</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input required placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary-500" />
+          <input placeholder="Role title (e.g. 4th year BSIT - 41021)" value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary-500" />
+          <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary-500">
+            <option value="">Select department</option>
+            {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+          <button type="submit" disabled={saving}
+            className="w-full rounded-lg bg-primary-600 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60">
+            {saving ? 'Saving…' : 'Save Changes'}
           </button>
         </form>
       </div>

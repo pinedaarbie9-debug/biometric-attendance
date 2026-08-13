@@ -54,7 +54,7 @@ export default function Topbar({
           </div>
           <div className="text-left">
             <p className="text-sm font-semibold leading-tight text-gray-900">{profile?.full_name}</p>
-            <p className="text-xs leading-tight text-gray-500">{profile?.role_title || (profile?.role === 'admin' ? 'System Admin' : 'Employee')}</p>
+            <p className="text-xs leading-tight text-gray-500">{profile?.role_title || (profile?.role === 'admin' ? 'System Admin' : 'Student')}</p>
           </div>
         </div>
 

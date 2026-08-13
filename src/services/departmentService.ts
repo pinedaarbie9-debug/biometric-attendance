@@ -34,6 +34,26 @@ export async function deleteDepartment(id: string) {
 }
 
 /**
+ * Fetch students grouped by department so each department card
+ * can show its member count and list.
+ */
+export async function getStudentsByDepartment(): Promise<Record<string, { id: string; full_name: string }[]>> {
+  const { data, error } = await supabase
+    .from('students')
+    .select('id, full_name, department_id')
+    .order('full_name');
+  if (error) throw error;
+
+  const grouped: Record<string, { id: string; full_name: string }[]> = {};
+  for (const s of data ?? []) {
+    if (!s.department_id) continue;
+    if (!grouped[s.department_id]) grouped[s.department_id] = [];
+    grouped[s.department_id].push({ id: s.id, full_name: s.full_name });
+  }
+  return grouped;
+}
+
+/**
  * Today's verification rate per department: verified (checked-in) students
  * over total active students in that department.
  */

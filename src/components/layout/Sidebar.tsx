@@ -21,10 +21,10 @@ interface NavItem {
 
 const adminNav: NavItem[] = [
   { to: '/admin', label: 'Overview', icon: <LayoutGrid size={18} /> },
-  { to: '/admin/employees', label: 'Employee Directory', icon: <Users size={18} /> },
+  { to: '/admin/employees', label: 'Student Directory', icon: <Users size={18} /> },
   { to: '/admin/attendance', label: 'Attendance Log', icon: <CalendarCheck size={18} /> },
   { to: '/admin/departments', label: 'Departments', icon: <Building2 size={18} /> },
-  { to: '/admin/leave', label: 'Leave Requests', icon: <ClipboardList size={18} /> },
+  { to: '/admin/leave', label: 'Absence Requests', icon: <ClipboardList size={18} /> },
   { to: '/admin/reports', label: 'Reports & Exports', icon: <FileText size={18} /> },
   { to: '/admin/settings', label: 'Settings', icon: <Settings size={18} /> },
   { to: '/admin/audit-logs', label: 'Audit Logs', icon: <ShieldCheck size={18} /> },
@@ -33,7 +33,7 @@ const adminNav: NavItem[] = [
 const employeeNav: NavItem[] = [
   { to: '/me', label: 'My Attendance', icon: <CalendarCheck size={18} /> },
   { to: '/terminal', label: 'Check In / Out', icon: <Fingerprint size={18} /> },
-  { to: '/me/leave', label: 'Leave Requests', icon: <ClipboardList size={18} /> },
+  { to: '/me/leave', label: 'Absence Requests', icon: <ClipboardList size={18} /> },
   { to: '/me/settings', label: 'Credential Settings', icon: <Settings size={18} /> },
 ];
 
@@ -58,12 +58,12 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="mb-8 flex items-center justify-between px-1">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5" title="Bestlink College of the Philippines">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-white">
               <Fingerprint size={20} />
             </div>
             <div>
-              <p className="text-sm font-bold leading-tight text-white">BIOATTEND</p>
+              <p className="text-sm font-bold leading-tight text-white">BCP</p>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-primary-400">
                 {isAdmin ? 'Secure System' : ''}
               </p>

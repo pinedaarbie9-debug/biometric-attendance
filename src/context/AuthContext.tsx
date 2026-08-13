@@ -14,7 +14,7 @@ interface AuthContextValue {
   profile: Student | null;
   loading: boolean;
   isAdmin: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: string | null; role?: string }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -37,9 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // eslint-disable-next-line no-console
       console.error('Failed to load profile', error);
       setProfile(null);
-      return;
+      return null;
     }
     setProfile(data as Student);
+    return data as Student;
   }
 
   useEffect(() => {
@@ -72,8 +73,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
+
+    if (data.user) {
+      setSession(data.session);
+      const loadedProfile = await loadProfile(data.user.id);
+      return { error: null, role: loadedProfile?.role };
+    }
+
     return { error: null };
   }
 

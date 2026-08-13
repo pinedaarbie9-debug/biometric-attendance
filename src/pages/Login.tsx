@@ -1,14 +1,16 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Fingerprint, Mail, Lock, Eye, EyeOff, ShieldCheck, ScanFace, KeyRound, ShieldEllipsis } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ShieldCheck, ScanFace, KeyRound } from 'lucide-react';
+import bcpLogo from '../assets/bcp-logo.png';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { loginWithFace } from '../services/faceService';
+import { logSecurityEvent } from '../services/auditService';
 import FaceCapture from '../components/FaceCapture';
 
 export default function Login() {
-  const { signIn, isAdmin } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,15 +28,23 @@ export default function Login() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signIn(email, password);
+    const { error, role } = await signIn(email, password);
     setLoading(false);
 
     if (error) {
       toast.error(error);
+      try {
+        await logSecurityEvent({
+          eventType: 'LOGIN_FAILED',
+          description: `Failed ${portal} login attempt for ${email}`,
+        });
+      } catch (logErr) {
+        console.error('Failed to log security event:', logErr);
+      }
       return;
     }
     toast.success('Verification successful. Welcome back!');
-    navigate(isAdmin ? '/admin' : '/me');
+    navigate(role === 'admin' ? '/admin' : '/me');
   }
 
   async function handleFaceCapture(descriptor: Float32Array) {
@@ -44,6 +54,14 @@ export default function Login() {
 
       if (result.error) {
         toast.error(result.error);
+        try {
+          await logSecurityEvent({
+            eventType: 'FACE_LOGIN_FAILED',
+            description: result.error,
+          });
+        } catch (logErr) {
+          console.error('Failed to log security event:', logErr);
+        }
         return;
       }
 
@@ -63,6 +81,14 @@ export default function Login() {
       navigate('/');
     } catch (err: any) {
       toast.error(err.message ?? 'May naganap na error sa face login.');
+      try {
+        await logSecurityEvent({
+          eventType: 'FACE_LOGIN_ERROR',
+          description: err.message ?? 'Unknown face login error',
+        });
+      } catch (logErr) {
+        console.error('Failed to log security event:', logErr);
+      }
     } finally {
       setFaceLoading(false);
     }
@@ -98,14 +124,10 @@ export default function Login() {
 
       <div className="relative z-10 w-full max-w-sm rounded-lg bg-white px-8 py-10">
         <div className="flex flex-col items-center text-center">
-          <div
-            className={`mb-3 flex h-16 w-16 items-center justify-center rounded-2xl text-white transition-colors ${
-              isAdminPortal ? 'bg-ink-900' : 'bg-primary-600'
-            }`}
-          >
-            {isAdminPortal ? <ShieldEllipsis size={30} /> : <Fingerprint size={30} />}
+          <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+            <img src={bcpLogo} alt="Bestlink College of the Philippines" className="h-14 w-14 object-contain" />
           </div>
-          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">BIOATTEND</h1>
+          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">BCP</h1>
           <p className="mt-1 text-xs text-gray-500">
             {isAdminPortal ? 'Admin Portal Access' :'Student Biometrics Attendamce'}
           </p>

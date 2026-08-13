@@ -7,18 +7,18 @@ import { supabase } from '../lib/supabase';
 export async function exportAttendanceCsv(startDate: string, endDate: string) {
   const { data, error } = await supabase
     .from('attendance')
-    .select('date, check_in_time, check_out_time, status, employee:employees(student_code, full_name, department:departments(name))')
+    .select('date, check_in_time, check_out_time, status, student:students(student_code, full_name, department:departments(name))')
     .gte('date', startDate)
     .lte('date', endDate)
     .order('date', { ascending: false });
   if (error) throw error;
 
   const rows = (data ?? []) as any[];
-  const header = ['Employee ID', 'Name', 'Department', 'Date', 'Check In', 'Check Out', 'Status'];
+  const header = ['Student ID', 'Name', 'Department', 'Date', 'Check In', 'Check Out', 'Status'];
   const csvRows = rows.map((r) => [
-    r.employee?.student_code ?? '',
-    r.employee?.full_name ?? '',
-    r.employee?.department?.name ?? '',
+    r.student?.student_code ?? '',
+    r.student?.full_name ?? '',
+    r.student?.department?.name ?? '',
     r.date,
     r.check_in_time ?? '',
     r.check_out_time ?? '',

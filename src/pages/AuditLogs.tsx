@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { getAuditLogs } from '../services/auditService';
 import type { AuditLog } from '../types';
@@ -9,8 +10,13 @@ export default function AuditLogs() {
 
   useEffect(() => {
     (async () => {
-      setLogs(await getAuditLogs());
-      setLoading(false);
+      try {
+        setLogs(await getAuditLogs());
+      } catch (err: any) {
+        toast.error(err.message ?? 'Failed to load audit logs');
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
