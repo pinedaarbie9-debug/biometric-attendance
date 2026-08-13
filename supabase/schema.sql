@@ -21,10 +21,10 @@ create table departments (
   created_at timestamptz not null default now()
 );
 
--- ---------- EMPLOYEES (extends auth.users) ----------
+-- ----------  STUDENTS (extends auth.users) ----------
 create table employees (
   id uuid primary key references auth.users(id) on delete cascade,
-  employee_code text unique not null, -- e.g. EMP-4019
+  student_code text unique not null, -- e.g.  STU- 4019
   full_name text not null,
   email text unique not null,
   role_title text,
@@ -42,7 +42,7 @@ create table employees (
 -- ---------- SCHEDULES ----------
 create table schedules (
   id uuid primary key default uuid_generate_v4(),
-  employee_id uuid not null references employees(id) on delete cascade,
+  student_id uuid not null references employees(id) on delete cascade,
   day_of_week int not null check (day_of_week between 0 and 6), -- 0=Sunday
   shift_start time not null,
   shift_end time not null,
@@ -64,7 +64,7 @@ create table raw_attendance_logs (
 -- ---------- ATTENDANCE (processed daily records) ----------
 create table attendance (
   id uuid primary key default uuid_generate_v4(),
-  employee_id uuid not null references employees(id) on delete cascade,
+  student_id uuid not null references employees(id) on delete cascade,
   date date not null,
   check_in_time timestamptz,
   check_out_time timestamptz,
@@ -72,13 +72,13 @@ create table attendance (
   verification_method verification_method,
   device_id text,
   created_at timestamptz not null default now(),
-  unique (employee_id, date)
+  unique (student_id, date)
 );
 
 -- ---------- LEAVE REQUESTS ----------
 create table leave_requests (
   id uuid primary key default uuid_generate_v4(),
-  employee_id uuid not null references employees(id) on delete cascade,
+  student_id uuid not null references employees(id) on delete cascade,
   leave_type text not null, -- 'sick' | 'vacation' | 'emergency' | 'other'
   start_date date not null,
   end_date date not null,
@@ -92,7 +92,7 @@ create table leave_requests (
 -- ---------- NOTIFICATIONS ----------
 create table notifications (
   id uuid primary key default uuid_generate_v4(),
-  employee_id uuid not null references employees(id) on delete cascade,
+  student_id uuid not null references employees(id) on delete cascade,
   title text not null,
   message text not null,
   is_read boolean not null default false,
@@ -102,7 +102,7 @@ create table notifications (
 -- ---------- AUDIT LOGS (security events, access denials) ----------
 create table audit_logs (
   id uuid primary key default uuid_generate_v4(),
-  employee_id uuid references employees(id) on delete set null,
+  student_id uuid references employees(id) on delete set null,
   event_type text not null, -- e.g. UNAUTHORIZED_DB_POLL
   description text,
   ip_address text,
@@ -110,10 +110,10 @@ create table audit_logs (
 );
 
 -- ---------- INDEXES ----------
-create index idx_attendance_employee_date on attendance(employee_id, date desc);
+create index idx_attendance_employee_date on attendance(student_id, date desc);
 create index idx_employees_department on employees(department_id);
 create index idx_raw_logs_processed on raw_attendance_logs(processed);
-create index idx_leave_employee on leave_requests(employee_id);
+create index idx_leave_employee on leave_requests(student_id);
 
 -- ============================================================
 -- ROW LEVEL SECURITY
@@ -134,7 +134,7 @@ create or replace function is_admin() returns boolean as $$
   );
 $$ language sql security definer stable;
 
--- Employees: admins see all, employees see only themselves
+--Student s: admins see all, employees see only themselves
 create policy "employees_select" on employees for select
   using (is_admin() or id = auth.uid());
 create policy "employees_admin_write" on employees for insert
@@ -147,25 +147,25 @@ create policy "departments_select" on departments for select using (true);
 create policy "departments_admin_write" on departments for all
   using (is_admin()) with check (is_admin());
 
--- Attendance: admin sees all, employee sees own
+-- Attendance: admin sees all,studentsees own
 create policy "attendance_select" on attendance for select
-  using (is_admin() or employee_id = auth.uid());
+  using (is_admin() or student_id = auth.uid());
 create policy "attendance_admin_write" on attendance for insert
   with check (is_admin());
 create policy "attendance_admin_update" on attendance for update
   using (is_admin());
 
--- Leave requests: employee can create/view own, admin can view/update all
+-- Leave requests:studentcan create/view own, admin can view/update all
 create policy "leave_select" on leave_requests for select
-  using (is_admin() or employee_id = auth.uid());
+  using (is_admin() or student_id = auth.uid());
 create policy "leave_insert" on leave_requests for insert
-  with check (employee_id = auth.uid());
+  with check (student_id = auth.uid());
 create policy "leave_admin_update" on leave_requests for update
   using (is_admin());
 
--- Notifications: employee sees own
+-- Notifications:studentsees own
 create policy "notifications_select" on notifications for select
-  using (employee_id = auth.uid());
+  using (student_id = auth.uid());
 create policy "notifications_admin_write" on notifications for insert
   with check (is_admin());
 
@@ -173,9 +173,9 @@ create policy "notifications_admin_write" on notifications for insert
 create policy "audit_admin_select" on audit_logs for select using (is_admin());
 create policy "audit_insert" on audit_logs for insert with check (true);
 
--- Schedules: admin manages, employee reads own
+-- Schedules: admin manages,studentreads own
 create policy "schedules_select" on schedules for select
-  using (is_admin() or employee_id = auth.uid());
+  using (is_admin() or student_id = auth.uid());
 create policy "schedules_admin_write" on schedules for all
   using (is_admin()) with check (is_admin());
 
@@ -183,14 +183,14 @@ create policy "schedules_admin_write" on schedules for all
 create policy "raw_logs_admin_select" on raw_attendance_logs for select using (is_admin());
 
 -- ============================================================
--- Auto-create employee profile row when a new auth user signs up
+-- Auto-createstudentprofile row when a new auth user signs up
 -- ============================================================
 create or replace function handle_new_user() returns trigger as $$
 begin
-  insert into public.employees (id, employee_code, full_name, email, role)
+  insert into public.employees (id, student_code, full_name, email, role)
   values (
     new.id,
-    'EMP-' || substr(replace(new.id::text, '-', ''), 1, 4),
+    ' STU- ' || substr(replace(new.id::text, '-', ''), 1, 4),
     coalesce(new.raw_user_meta_data->>'full_name', new.email),
     new.email,
     'employee'

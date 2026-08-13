@@ -60,7 +60,7 @@ export async function processRawLog(logId: string) {
   const { data: employee, error: empErr } = await supabase
     .from('employees')
     .select('id')
-    .eq('employee_code', log.badge_number)
+    .eq('student_code', log.badge_number)
     .single();
   if (empErr) throw empErr;
 
@@ -68,13 +68,13 @@ export async function processRawLog(logId: string) {
   const { data: existing } = await supabase
     .from('attendance')
     .select('id')
-    .eq('employee_id', employee.id)
+    .eq('student_id', employee.id)
     .eq('date', date)
     .maybeSingle();
 
   if (log.event_type === 'check_in' && !existing) {
     await supabase.from('attendance').insert({
-      employee_id: employee.id,
+      student_id: employee.id,
       date,
       check_in_time: log.captured_at,
       status: 'on_time',
@@ -94,7 +94,7 @@ export async function processRawLog(logId: string) {
 /**
  * ✅ USE THIS from the web app (BiometricTerminal.tsx, Face ID scan, etc.)
  * Calls the `simulate_check_in` RPC — security-definer, so it works for any
- * authenticated employee without hitting the raw_attendance_logs RLS gap.
+ * authenticatedstudentwithout hitting the raw_attendance_logs RLS gap.
  * The DB trigger takes it from here (schedule-aware status + notifications).
  */
 export async function simulateCheckIn(
@@ -103,7 +103,7 @@ export async function simulateCheckIn(
   verificationMethod: 'fingerprint' | 'facial_id' = 'fingerprint'
 ) {
   const { data, error } = await supabase.rpc('simulate_check_in', {
-    p_employee_code: employeeCode,
+    p_student_code: employeeCode,
     p_event_type: eventType,
     p_verification_method: verificationMethod,
   });

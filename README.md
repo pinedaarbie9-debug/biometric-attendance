@@ -1,6 +1,6 @@
 # Biometric Smart Attendance System
 
-React + TypeScript + Supabase na employee attendance system na may biometric
+React + TypeScript + Supabase nastudentattendance system na may biometric
 device integration, role-based access (admin/employee), department/schedule/
 leave management, at reporting.
 
@@ -27,7 +27,7 @@ src/
                        - reportService
                        - deviceService (biometric device webhook/ingest)
   routes/          -> ProtectedRoute, RoleRoute, AppRoutes
-  pages/           -> AdminDashboard, EmployeeManagement, DepartmentManagement,
+  pages/           -> AdminDashboard,Student Management, DepartmentManagement,
                        ScheduleManagement, LeaveManagement, atbp.
   components/      -> reusable UI (common/, layout/)
   hooks/           -> custom hooks
@@ -45,7 +45,7 @@ ang `deviceService` ay dinisenyo bilang isang **generic ingestion layer**:
    maliit na bridge/agent na tatakbo malapit sa device (kung LAN-based ang
    device, hal. ZKTeco push protocol).
 2. Ang `deviceService.processRawLog()` ang bahala mag-match ng badge number
-   papunta sa employee record, at gagawa ng `attendance` entry (time-in/time-out).
+   papunta sastudentrecord, at gagawa ng `attendance` entry (time-in/time-out).
 3. Kapag napili na ang specific device brand/SDK, dito lang natin ilalagay
    ang adapter/parser logic — hindi na kailangang baguhin ang ibang parte
    ng system.
@@ -69,7 +69,7 @@ npm run dev
    promote your first account: in the SQL editor run
    `update employees set role = 'admin' where email = 'you@company.com';`
    so you can log in as an admin and start adding real employees from
-   the Employee Directory screen.
+   theStudent  Directory screen.
 
 ## Mobile
 
@@ -91,13 +91,13 @@ Capacitor or Expo with minimal changes since it's plain React.
 - [x] Routing (protected/role routes, Access Denied page)
 - [x] Login (BIOATTEND design)
 - [x] AdminDashboard (Mission Control Overview)
-- [x] Employee Directory (add/view, biometric status)
+- [x]Student  Directory (add/view, biometric status)
 - [x] Department Management
 - [x] Attendance Log (admin, by date)
 - [x] Leave Requests (submit + approve/reject)
 - [x] Reports & CSV export
 - [x] Audit Logs
-- [x] Employee self-service (My Attendance, Credential Settings)
+- [x]Student  self-service (My Attendance, Credential Settings)
 - [x] Biometric Terminal (kiosk check-in/out simulation, ready to be
       swapped for a real device adapter — see `deviceService.ts`)
 - [x] Responsive mobile + desktop layout

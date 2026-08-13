@@ -6,12 +6,12 @@ import Badge from '../../components/common/Badge';
 import { useAuth } from '../../context/AuthContext';
 import { getEmployeeAttendanceHistory, getEmployeeMonthStats, subscribeToAttendance } from '../../services/attendanceService';
 import { unsubscribe } from '../../services/realtimeService';
-import type { Attendance, EmployeeAttendanceStats } from '../../types';
+import type { Attendance, StudentAttendanceStats } from '../../types';
 
 export default function MyAttendance() {
   const { profile } = useAuth();
   const [history, setHistory] = useState<Attendance[]>([]);
-  const [stats, setStats] = useState<EmployeeAttendanceStats | null>(null);
+  const [stats, setStats] = useState<StudentAttendanceStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -37,10 +37,10 @@ export default function MyAttendance() {
   return (
     <DashboardLayout
       title={`Welcome back, ${profile?.full_name?.split(' ')[0] ?? ''}!`}
-      subtitle={`${profile?.full_name} — ${profile?.role_title ?? 'Employee'} (ID: ${profile?.employee_code})`}
+      subtitle={`${profile?.full_name} — ${profile?.role_title ?? 'Student'} (ID: ${profile?.student_code})`}
     >
       <div className="mb-4 flex justify-end">
-        <Badge tone="green">ACTIVE EMPLOYEE STATUS</Badge>
+        <Badge tone="green">ACTIVE STUDENT STATUS</Badge>
       </div>
 
       {loading ? (

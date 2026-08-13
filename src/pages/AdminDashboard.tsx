@@ -43,8 +43,8 @@ export default function AdminDashboard() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
-              label="Total Registered Employees"
-              value={stats?.totalEmployees ?? 0}
+              label="Total Registered Students"
+              value={stats?.totalStudents ?? 0}
               icon={<Users size={18} />}
               badge="ACTIVE"
               badgeTone="teal"
@@ -73,7 +73,6 @@ export default function AdminDashboard() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            {/* Recent Attendance Stream */}
             <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
               <div className="mb-4 flex items-center justify-between">
                 <div>
@@ -93,11 +92,11 @@ export default function AdminDashboard() {
                   <div key={a.id} className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700">
-                        {a.employee?.full_name?.charAt(0) ?? '?'}
+                        {a.student?.full_name?.charAt(0) ?? '?'}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">{a.employee?.full_name}</p>
-                        <p className="text-xs text-gray-500">{a.employee?.department?.name}</p>
+                        <p className="text-sm font-semibold text-gray-900">{a.student?.full_name}</p>
+                        <p className="text-xs text-gray-500">{a.student?.department?.name}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -112,7 +111,6 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Department Verification Rates */}
             <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
               <h2 className="text-sm font-bold text-gray-900">Department Verification Rates</h2>
               <p className="mb-4 text-xs text-gray-500">Today's check-in metrics grouped by department</p>

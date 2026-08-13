@@ -1,12 +1,12 @@
 import { supabase } from '../lib/supabase';
-import type { Attendance, DashboardStats, EmployeeAttendanceStats } from '../types';
+import type { Attendance, DashboardStats, StudentAttendanceStats } from '../types';
 import { subscribeToTable } from './realtimeService';
 
 export async function getTodayAttendanceStream(limit = 10) {
   const today = new Date().toISOString().slice(0, 10);
   const { data, error } = await supabase
     .from('attendance')
-    .select('*, employee:employees(*, department:departments(*))')
+    .select('*, student:students(*, department:departments(*))')
     .eq('date', today)
     .order('check_in_time', { ascending: false })
     .limit(limit);
@@ -17,19 +17,19 @@ export async function getTodayAttendanceStream(limit = 10) {
 export async function getDashboardStats(): Promise<DashboardStats> {
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ count: totalEmployees }, { data: todaysAttendance, error: attErr }] = await Promise.all([
-    supabase.from('employees').select('*', { count: 'exact', head: true }).eq('is_active', true),
+  const [{ count: totalStudents }, { data: todaysAttendance, error: attErr }] = await Promise.all([
+    supabase.from('students').select('*', { count: 'exact', head: true }).eq('is_active', true),
     supabase.from('attendance').select('status').eq('date', today),
   ]);
   if (attErr) throw attErr;
 
   const presentToday = (todaysAttendance ?? []).length;
   const lateArrivals = (todaysAttendance ?? []).filter((a) => a.status === 'late_entry').length;
-  const total = totalEmployees ?? 0;
+  const total = totalStudents ?? 0;
   const absentToday = Math.max(total - presentToday, 0);
 
   return {
-    totalEmployees: total,
+    totalStudents: total,
     presentToday,
     presentRate: total > 0 ? Math.round((presentToday / total) * 1000) / 10 : 0,
     lateArrivals,
@@ -37,25 +37,25 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   };
 }
 
-export async function getEmployeeAttendanceHistory(employeeId: string, limit = 30) {
+export async function getEmployeeAttendanceHistory(studentId: string, limit = 30) {
   const { data, error } = await supabase
     .from('attendance')
     .select('*')
-    .eq('employee_id', employeeId)
+    .eq('student_id', studentId)
     .order('date', { ascending: false })
     .limit(limit);
   if (error) throw error;
   return data as Attendance[];
 }
 
-export async function getEmployeeMonthStats(employeeId: string): Promise<EmployeeAttendanceStats> {
+export async function getEmployeeMonthStats(studentId: string): Promise<StudentAttendanceStats> {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
 
   const { data, error } = await supabase
     .from('attendance')
     .select('status')
-    .eq('employee_id', employeeId)
+    .eq('student_id', studentId)
     .gte('date', monthStart);
   if (error) throw error;
 
@@ -68,10 +68,10 @@ export async function getEmployeeMonthStats(employeeId: string): Promise<Employe
 }
 
 /**
- * Admin-only manual override (e.g. admin correcting an employee's record).
+ * Admin-only manual override (e.g. admin correcting a student's record).
  * NOTE: for actual kiosk/face/fingerprint check-in, use `simulateCheckIn()`
  * from deviceService.ts instead — this direct insert will fail RLS for
- * non-admin employees (see attendance_admin_write policy in schema.sql).
+ * non-admin students (see attendance_admin_write policy in schema.sql).
  */
 export async function recordAttendance(params: {
   employeeId: string;
@@ -85,7 +85,7 @@ export async function recordAttendance(params: {
   const { data: existing } = await supabase
     .from('attendance')
     .select('*')
-    .eq('employee_id', params.employeeId)
+    .eq('student_id', params.employeeId)
     .eq('date', today)
     .maybeSingle();
 
@@ -96,7 +96,7 @@ export async function recordAttendance(params: {
     const { data, error } = await supabase
       .from('attendance')
       .insert({
-        employee_id: params.employeeId,
+        student_id: params.employeeId,
         date: today,
         check_in_time: now,
         status: isLate ? 'late_entry' : 'on_time',
@@ -107,7 +107,7 @@ export async function recordAttendance(params: {
       .single();
     if (error) throw error;
 
-    await supabase.from('employees').update({ last_verified_at: now }).eq('id', params.employeeId);
+    await supabase.from('students').update({ last_verified_at: now }).eq('id', params.employeeId);
     return data as Attendance;
   }
 
@@ -121,11 +121,11 @@ export async function recordAttendance(params: {
   return data as Attendance;
 }
 
-export async function getMyAttendance(employeeId: string) {
+export async function getMyAttendance(studentId: string) {
   const { data, error } = await supabase
     .from('attendance')
     .select('*')
-    .eq('employee_id', employeeId)
+    .eq('student_id', studentId)
     .order('date', { ascending: false });
 
   if (error) throw error;
@@ -136,7 +136,7 @@ export async function getAllAttendanceToday() {
   const today = new Date().toISOString().slice(0, 10);
   const { data, error } = await supabase
     .from('attendance')
-    .select('*, employees(full_name, department_id)')
+    .select('*, students(full_name, department_id)')
     .eq('date', today)
     .order('check_in_time', { ascending: false });
 
@@ -146,9 +146,9 @@ export async function getAllAttendanceToday() {
 
 /**
  * Live subscription — gamitin sa AdminDashboard.tsx (walang filter, lahat) o
- * sa MyAttendance.tsx (may filter na `employee_id=eq.<id>`).
+ * sa MyAttendance.tsx (may filter na `student_id=eq.<id>`).
  */
-export function subscribeToAttendance(onChange: (payload: any) => void, employeeId?: string) {
-  const filter = employeeId ? `employee_id=eq.${employeeId}` : undefined;
+export function subscribeToAttendance(onChange: (payload: any) => void, studentId?: string) {
+  const filter = studentId ? `student_id=eq.${studentId}` : undefined;
   return subscribeToTable('attendance', filter, onChange, 'attendance-live');
 }

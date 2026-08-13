@@ -14,7 +14,7 @@ export default function AttendanceLog() {
       setLoading(true);
       const { data } = await supabase
         .from('attendance')
-        .select('*, employee:employees(*, department:departments(*))')
+        .select('*, student:students(*, department:departments(*))')
         .eq('date', date)
         .order('check_in_time', { ascending: false });
       setRecords((data as Attendance[]) ?? []);
@@ -34,7 +34,7 @@ export default function AttendanceLog() {
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-3">Employee</th>
+                <th className="px-4 py-3">Student</th>
                 <th className="px-4 py-3">Department</th>
                 <th className="px-4 py-3">Check In</th>
                 <th className="px-4 py-3">Check Out</th>
@@ -47,8 +47,8 @@ export default function AttendanceLog() {
               {!loading && records.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No records for this date.</td></tr>}
               {records.map((r) => (
                 <tr key={r.id}>
-                  <td className="px-4 py-3 font-medium text-gray-800">{r.employee?.full_name}</td>
-                  <td className="px-4 py-3 text-gray-600">{r.employee?.department?.name ?? '—'}</td>
+                  <td className="px-4 py-3 font-medium text-gray-800">{r.student?.full_name}</td>
+                  <td className="px-4 py-3 text-gray-600">{r.student?.department?.name ?? '—'}</td>
                   <td className="px-4 py-3 text-gray-600">{r.check_in_time ? new Date(r.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
                   <td className="px-4 py-3 text-gray-600">{r.check_out_time ? new Date(r.check_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
                   <td className="px-4 py-3"><Badge tone={r.status === 'on_time' ? 'green' : r.status === 'late_entry' ? 'yellow' : 'red'}>{r.status.replace('_', ' ').toUpperCase()}</Badge></td>

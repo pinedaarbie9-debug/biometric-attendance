@@ -7,7 +7,7 @@ export async function getMyNotifications(employeeId: string) {
   const { data, error } = await supabase
     .from('notifications')
     .select('*')
-    .eq('employee_id', employeeId)
+    .eq('student_id', employeeId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -26,7 +26,7 @@ export async function markAsRead(notificationId: string) {
 export function subscribeToNotifications(employeeId: string, onChange: (payload: any) => void) {
   return subscribeToTable(
     'notifications',
-    `employee_id=eq.${employeeId}`,
+    `student_id=eq.${employeeId}`,
     onChange,
     'notifications-live'
   );

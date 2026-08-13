@@ -59,7 +59,7 @@ export default function BiometricTerminal() {
   async function finalizeCheckIn(verificationMethod: 'fingerprint' | 'facial_id') {
     if (!profile) return;
     try {
-      await simulateCheckIn(profile.employee_code, eventType, verificationMethod);
+      await simulateCheckIn(profile.student_code, eventType, verificationMethod);
       setStatus('success');
       setResult(
         eventType === 'check_in'
@@ -90,7 +90,7 @@ export default function BiometricTerminal() {
         return;
       }
 
-      const { match } = await verifyFaceAgainstEmployee(profile.employee_code, descriptor);
+      const { match } = await verifyFaceAgainstEmployee(profile.student_code, descriptor);
 
       if (!match) {
         setStatus('no_match');
@@ -153,7 +153,7 @@ export default function BiometricTerminal() {
 
         <div className="mb-4 text-center">
           <h2 className="text-base font-bold text-gray-900 sm:text-lg">{profile?.full_name}</h2>
-          <p className="text-xs text-gray-500 sm:text-sm">Employee ID: {profile?.employee_code}</p>
+          <p className="text-xs text-gray-500 sm:text-sm">Employee ID: {profile?.student_code}</p>
         </div>
 
         {/* Check In / Check Out toggle */}

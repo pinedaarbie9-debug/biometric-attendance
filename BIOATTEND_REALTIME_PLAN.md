@@ -27,7 +27,7 @@ raw_attendance_logs (processed = false)
 fn_process_raw_attendance_log()
         │  computes status vs schedules table
         ▼
-attendance (upsert: employee_id + date)
+attendance (upsert: student_id + date)
         │  AFTER INSERT/UPDATE trigger
         ▼
 fn_notify_attendance_event()
@@ -50,19 +50,19 @@ AdminDashboard / MyAttendance / notif bell — LIVE update, walang refresh
 File: `supabase/002_realtime_backend_logic.sql` (kasama dito)
 
 1. **`fn_process_raw_attendance_log()`** — trigger function na tumatakbo pag may bagong row sa
-   `raw_attendance_logs`. Hahanapin ang schedule ng employee (base sa `badge_number` → `employee_code`),
+   `raw_attendance_logs`. Hahanapin ang schedule ngstudent(base sa `badge_number` → `student_code`),
    ikukumpara ang `captured_at` sa `shift_start` para malaman kung `on_time` o `late_entry`,
    tapos mag-`upsert` sa `attendance` (check_in_time kung `check_in`, check_out_time kung `check_out`).
    Pagkatapos, i-mamarkahan yung raw log na `processed = true`.
 
 2. **`fn_notify_attendance_event()`** — trigger sa `attendance` (AFTER INSERT/UPDATE). Kapag
-   `status = 'late_entry'` o `'absent'`, gumagawa ng row sa `notifications` para sa employee AT
+   `status = 'late_entry'` o `'absent'`, gumagawa ng row sa `notifications` para sastudentAT
    sa lahat ng admin.
 
 3. **`fn_notify_leave_status_change()`** — trigger sa `leave_requests` (AFTER UPDATE OF status).
    Pag na-approve/reject ng admin, auto-notify yung employee.
 
-4. **`simulate_check_in(p_employee_code text, p_event_type text)`** — RPC function na
+4. **`simulate_check_in(p_student_code text, p_event_type text)`** — RPC function na
    ginagamit habang wala pang device. Ito ang tatawagin ng "Simulate Biometric Scan" button sa
    `BiometricTerminal.tsx`.
 

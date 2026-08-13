@@ -5,7 +5,7 @@ export async function getNotifications(employeeId: string) {
   const { data, error } = await supabase
     .from('notifications')
     .select('*')
-    .eq('employee_id', employeeId)
+    .eq('student_id', employeeId)
     .order('created_at', { ascending: false })
     .limit(50);
   if (error) throw error;
@@ -20,6 +20,6 @@ export async function markNotificationRead(id: string) {
 export async function sendNotification(employeeId: string, title: string, message: string) {
   const { error } = await supabase
     .from('notifications')
-    .insert({ employee_id: employeeId, title, message });
+    .insert({ student_id: employeeId, title, message });
   if (error) throw error;
 }

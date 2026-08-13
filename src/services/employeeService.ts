@@ -1,34 +1,34 @@
 import { supabase } from '../lib/supabase';
-import type { Employee } from '../types';
+import type { Student } from '../types';
 
 export async function getEmployees() {
   const { data, error } = await supabase
-    .from('employees')
+    .from('students')
     .select('*, department:departments(*)')
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return data as Employee[];
+  return data as Student[];
 }
 
 export async function getEmployeeById(id: string) {
   const { data, error } = await supabase
-    .from('employees')
+    .from('students')
     .select('*, department:departments(*)')
     .eq('id', id)
     .single();
   if (error) throw error;
-  return data as Employee;
+  return data as Student;
 }
 
-export async function updateEmployee(id: string, patch: Partial<Employee>) {
+export async function updateEmployee(id: string, patch: Partial<Student>) {
   const { data, error } = await supabase
-    .from('employees')
+    .from('students')
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
     .single();
   if (error) throw error;
-  return data as Employee;
+  return data as Student;
 }
 
 export async function deactivateEmployee(id: string) {
@@ -40,7 +40,7 @@ export async function reactivateEmployee(id: string) {
 }
 
 /**
- * Creates the auth user + employee profile row (profile row itself
+ * Creates the auth user + student profile row (profile row itself
  * is auto-created by the `handle_new_user` trigger in schema.sql).
  * Requires the Supabase project's sign-ups to be enabled, or should
  * be called from a server/edge-function using the service role key
@@ -51,7 +51,7 @@ export async function inviteEmployee(params: {
   full_name: string;
   role_title?: string;
   department_id?: string;
-  role?: 'admin' | 'employee';
+  role?: 'admin' | 'student';
   password: string;
 }) {
   const { data, error } = await supabase.auth.signUp({
@@ -65,7 +65,7 @@ export async function inviteEmployee(params: {
     await updateEmployee(data.user.id, {
       role_title: params.role_title,
       department_id: params.department_id,
-      role: params.role ?? 'employee',
+      role: params.role ?? 'student',
     });
   }
   return data.user;

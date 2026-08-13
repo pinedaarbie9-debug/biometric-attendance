@@ -7,11 +7,11 @@ import {
 } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import type { Employee } from '../types';
+import type { Student } from '../types';
 
 interface AuthContextValue {
   session: Session | null;
-  profile: Employee | null;
+  profile: Student | null;
   loading: boolean;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -23,12 +23,12 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Employee | null>(null);
+  const [profile, setProfile] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function loadProfile(userId: string) {
     const { data, error } = await supabase
-      .from('employees')
+      .from('students')
       .select('*, department:departments(*)')
       .eq('id', userId)
       .single();
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       return;
     }
-    setProfile(data as Employee);
+    setProfile(data as Student);
   }
 
   useEffect(() => {

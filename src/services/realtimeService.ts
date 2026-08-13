@@ -8,7 +8,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
  * suffix — pero ang mga caller (subscribeToAttendance, subscribeToNotifications)
  * ay nag-o-override nito ng FIXED string ('attendance-live', etc.), na
  * pwedeng mag-conflict kung dalawang subscription (hal. dalawang employee,
- * o admin + employee view) ang buhay nang sabay sa parehong tab.
+ * o admin +studentview) ang buhay nang sabay sa parehong tab.
  * Ngayon, laging unique ang default channel name kahit walang override.
  */
 export function subscribeToTable(

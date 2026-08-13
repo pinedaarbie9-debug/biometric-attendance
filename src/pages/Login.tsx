@@ -1,8 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Fingerprint, Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Fingerprint, Mail, Lock, Eye, EyeOff, ShieldCheck, ScanFace, KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import { loginWithFace } from '../services/faceService';
+import FaceCapture from '../components/FaceCapture';
 
 export default function Login() {
   const { signIn, isAdmin } = useAuth();
@@ -12,6 +15,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [mode, setMode] = useState<'password' | 'face'>('password');
+  const [faceLoading, setFaceLoading] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -27,22 +33,95 @@ export default function Login() {
     navigate(isAdmin ? '/admin' : '/me');
   }
 
+  async function handleFaceCapture(descriptor: Float32Array) {
+    setFaceLoading(true);
+    try {
+      const result = await loginWithFace(descriptor);
+
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      if (result.studentCode) {
+        const { error: checkInError } = await supabase.rpc('simulate_check_in', {
+          p_student_code: result.studentCode,
+        });
+        if (checkInError) {
+          console.error('Auto check-in failed:', checkInError);
+          toast('Naka-login ka na, pero hindi na-record ang check-in. I-check mo sa Attendance Log.', { icon: '⚠️' });
+        } else {
+          toast.success(`Naka-check-in ka na, ${result.matchedName}!`);
+        }
+      }
+
+      toast.success(`Nakilala ka bilang ${result.matchedName}. Welcome back!`);
+      navigate('/');
+    } catch (err: any) {
+      toast.error(err.message ?? 'May naganap na error sa face login.');
+    } finally {
+      setFaceLoading(false);
+    }
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-ink-900 px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl sm:p-8">
+    <div className="relative flex min-h-screen items-center justify-center bg-white">
+      {/* Full-bleed photo background, kaliwa at kanan ng card.
+          PALITAN MO ITONG DALAWANG bg-[url(...)] ng sarili niyong campus
+          photo, hal. bg-[url('/images/campus.jpg')] bg-cover bg-center.
+          Ginamit muna dito ang gradient placeholder. */}
+      <div className="absolute inset-0 grid grid-cols-1 md:grid-cols-2">
+        <div
+          className="hidden bg-cover bg-center md:block"
+          style={{
+            backgroundImage:
+              'linear-gradient(160deg, #1e3a5f 0%, #2d5a8c 45%, #4a90c2 100%)',
+          }}
+        />
+        <div
+          className="bg-cover bg-center"
+          style={{
+            backgroundImage:
+              'linear-gradient(200deg, #4a90c2 0%, #2d5a8c 55%, #1e3a5f 100%)',
+          }}
+        />
+      </div>
+
+      {/* Login card — walang border/shadow, lumulutang lang sa ibabaw ng
+          background, katulad ng reference design */}
+      <div className="relative z-10 w-full max-w-sm rounded-lg bg-white px-8 py-10">
         <div className="flex flex-col items-center text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-600 text-white">
-            <Fingerprint size={28} />
+          <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-600 text-white">
+            <Fingerprint size={30} />
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">BIOATTEND</h1>
-          <p className="mt-1 text-sm text-gray-500">Smart Biometric Attendance Manager</p>
+          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">BIOATTEND</h1>
+          <p className="mt-1 text-xs text-gray-500">Smart Biometric Attendance Manager</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          <div>
-            <label className="mb-1.5 block text-sm font-semibold text-gray-700">
-              Corporate Email Address
-            </label>
+        {/* Mode toggle */}
+        <div className="mt-6 flex rounded-lg bg-gray-100 p-1 text-sm font-semibold">
+          <button
+            type="button"
+            onClick={() => setMode('password')}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 transition-colors ${
+              mode === 'password' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500'
+            }`}
+          >
+            <KeyRound size={15} /> Password
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('face')}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 transition-colors ${
+              mode === 'face' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500'
+            }`}
+          >
+            <ScanFace size={15} /> Face Login
+          </button>
+        </div>
+
+        {mode === 'password' ? (
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div className="relative">
               <Mail size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -50,16 +129,11 @@ export default function Login() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="m.vance@bioattend.com"
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                placeholder="Corporate Email Address"
+                className="w-full rounded-md border border-gray-300 bg-white py-3 pl-9 pr-3 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="mb-1.5 block text-sm font-semibold text-gray-700">
-              Secured Passphrase
-            </label>
             <div className="relative">
               <Lock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -67,8 +141,8 @@ export default function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••••"
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-9 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                placeholder="Secured Passphrase"
+                className="w-full rounded-md border border-gray-300 bg-white py-3 pl-9 pr-9 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               />
               <button
                 type="button"
@@ -78,10 +152,22 @@ export default function Login() {
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-          </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2 text-gray-600">
+            <div className="text-center">
+              <a href="#" className="text-sm text-primary-700 hover:underline">
+                Forgot Password?
+              </a>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-md bg-gradient-to-r from-primary-700 to-primary-900 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+            >
+              {loading ? 'Signing in…' : 'Sign In to Dashboard'}
+            </button>
+
+            <label className="flex items-center justify-center gap-2 text-xs text-gray-500">
               <input
                 type="checkbox"
                 checked={remember}
@@ -90,24 +176,30 @@ export default function Login() {
               />
               Remember computer
             </label>
-            <a href="#" className="font-medium text-primary-600 hover:text-primary-700">
-              Forgot Password?
-            </a>
+
+            <div className="rounded-md bg-primary-50 p-3 text-xs text-primary-900">
+              <p className="mb-1 font-semibold">Instructions</p>
+              <ol className="list-inside list-decimal space-y-1">
+                <li>Gamitin ang iyong corporate email at binigay na passphrase.</li>
+                <li>Kontakin ang IT admin kung nahihirapan kang mag-log in.</li>
+              </ol>
+            </div>
+          </form>
+        ) : (
+          <div className="mt-6 space-y-4">
+            <p className="text-center text-xs text-gray-500">
+              I-center mo ang mukha mo sa camera. Awtomatiko kang ma-i-login at ma-record ang check-in mo kapag na-kilala ka.
+            </p>
+            <div className="flex justify-center">
+              <FaceCapture buttonLabel={faceLoading ? 'Verifying…' : 'Login with Face'} onCapture={handleFaceCapture} />
+            </div>
           </div>
+        )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-primary-600 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-700 disabled:opacity-60"
-          >
-            {loading ? 'Signing in…' : 'Sign In to Dashboard'}
-          </button>
-
-          <p className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
-            <ShieldCheck size={14} className="text-primary-600" />
-            Protected with end-to-end encryption
-          </p>
-        </form>
+        <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-gray-400">
+          <ShieldCheck size={14} className="text-primary-600" />
+          Protected with end-to-end encryption
+        </p>
       </div>
     </div>
   );

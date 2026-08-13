@@ -33,8 +33,8 @@ export default function LeaveManagement() {
     load();
     if (!profile) return;
 
-    // Live: admin sees every new/updated request; employee sees only their own.
-    const filter = isAdmin ? undefined : `employee_id=eq.${profile.id}`;
+    // Live: admin sees every new/updated request; student sees only their own.
+    const filter = isAdmin ? undefined : `student_id=eq.${profile.id}`;
     const channel = subscribeToTable('leave_requests', filter, () => load());
     return () => unsubscribe(channel);
   }, [profile, isAdmin, load]);
@@ -52,7 +52,7 @@ export default function LeaveManagement() {
   }
 
   return (
-    <DashboardLayout title="Leave Requests" subtitle={isAdmin ? 'Review and approve employee leave requests' : 'Submit and track your leave requests'}>
+    <DashboardLayout title="Leave Requests" subtitle={isAdmin ? 'Review and approve student leave requests' : 'Submit and track your leave requests'}>
       {!isAdmin && (
         <div className="mb-4 flex justify-end">
           <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
@@ -66,7 +66,7 @@ export default function LeaveManagement() {
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
               <tr>
-                {isAdmin && <th className="px-4 py-3">Employee</th>}
+                {isAdmin && <th className="px-4 py-3">Student</th>}
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Dates</th>
                 <th className="px-4 py-3">Reason</th>
@@ -79,7 +79,7 @@ export default function LeaveManagement() {
               {!loading && requests.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No leave requests.</td></tr>}
               {requests.map((r) => (
                 <tr key={r.id}>
-                  {isAdmin && <td className="px-4 py-3 font-medium text-gray-800">{r.employee?.full_name}</td>}
+                  {isAdmin && <td className="px-4 py-3 font-medium text-gray-800">{r.student?.full_name}</td>}
                   <td className="px-4 py-3 capitalize text-gray-600">{r.leave_type}</td>
                   <td className="px-4 py-3 text-gray-600">{r.start_date} → {r.end_date}</td>
                   <td className="px-4 py-3 text-gray-500">{r.reason || '—'}</td>

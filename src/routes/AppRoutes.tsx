@@ -8,7 +8,7 @@ import AccessDenied from '../pages/AccessDenied';
 import BiometricTerminal from '../pages/BiometricTerminal';
 
 import AdminDashboard from '../pages/AdminDashboard';
-import EmployeeDirectory from '../pages/EmployeeDirectory';
+import StudentDirectory from '../pages/EmployeeDirectory';
 import DepartmentManagement from '../pages/DepartmentManagement';
 import AttendanceLog from '../pages/AttendanceLog';
 import LeaveManagement from '../pages/LeaveManagement';
@@ -39,7 +39,7 @@ export default function AppRoutes() {
         {/* Admin-only */}
         <Route element={<RoleRoute allow={['admin']} />}>
           <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/employees" element={<EmployeeDirectory />} />
+          <Route path="/admin/employees" element={<StudentDirectory />} />
           <Route path="/admin/departments" element={<DepartmentManagement />} />
           <Route path="/admin/attendance" element={<AttendanceLog />} />
           <Route path="/admin/leave" element={<LeaveManagement />} />
@@ -48,8 +48,8 @@ export default function AppRoutes() {
           <Route path="/admin/audit-logs" element={<AuditLogs />} />
         </Route>
 
-        {/* Employee (and admin can view own too) */}
-        <Route element={<RoleRoute allow={['admin', 'employee']} />}>
+        {/* Student (and admin can view own too) */}
+        <Route element={<RoleRoute allow={['admin', 'student']} />}>
           <Route path="/me" element={<MyAttendance />} />
           <Route path="/me/leave" element={<LeaveManagement />} />
           <Route path="/me/settings" element={<CredentialSettings />} />

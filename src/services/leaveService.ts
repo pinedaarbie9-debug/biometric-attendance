@@ -6,14 +6,14 @@ export async function getLeaveRequests(employeeId?: string) {
     .from('leave_requests')
     .select(`
       *,
-      employee:employees!leave_requests_employee_id_fkey(
+      student:students!leave_requests_employee_id_fkey(
         *,
         department:departments(*)
       )
     `)
     .order('created_at', { ascending: false });
 
-  if (employeeId) query = query.eq('employee_id', employeeId);
+  if (employeeId) query = query.eq('student_id', employeeId);
 
   const { data, error } = await query;
   if (error) {
@@ -33,7 +33,7 @@ export async function createLeaveRequest(params: {
   const { data, error } = await supabase
     .from('leave_requests')
     .insert({
-      employee_id: params.employeeId,
+      student_id: params.employeeId,
       leave_type: params.leaveType,
       start_date: params.startDate,
       end_date: params.endDate,

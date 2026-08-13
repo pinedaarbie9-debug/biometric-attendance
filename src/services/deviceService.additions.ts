@@ -13,7 +13,7 @@ export async function simulateCheckIn(
   eventType: 'check_in' | 'check_out' = 'check_in'
 ) {
   const { data, error } = await supabase.rpc('simulate_check_in', {
-    p_employee_code: employeeCode,
+    p_student_code: employeeCode,
     p_event_type: eventType,
   });
 

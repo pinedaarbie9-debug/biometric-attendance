@@ -34,8 +34,8 @@ export async function deleteDepartment(id: string) {
 }
 
 /**
- * Today's verification rate per department: verified (checked-in) employees
- * over total active employees in that department.
+ * Today's verification rate per department: verified (checked-in) students
+ * over total active students in that department.
  */
 export async function getDepartmentVerificationRates(): Promise<DepartmentVerificationRate[]> {
   const today = new Date().toISOString().slice(0, 10);
@@ -43,15 +43,15 @@ export async function getDepartmentVerificationRates(): Promise<DepartmentVerifi
   const [{ data: departments, error: deptErr }, { data: employees, error: empErr }, { data: attendance, error: attErr }] =
     await Promise.all([
       supabase.from('departments').select('*'),
-      supabase.from('employees').select('id, department_id').eq('is_active', true),
-      supabase.from('attendance').select('employee_id').eq('date', today),
+      supabase.from('students').select('id, department_id').eq('is_active', true),
+      supabase.from('attendance').select('student_id').eq('date', today),
     ]);
 
   if (deptErr) throw deptErr;
   if (empErr) throw empErr;
   if (attErr) throw attErr;
 
-  const checkedInIds = new Set((attendance ?? []).map((a) => a.employee_id));
+  const checkedInIds = new Set((attendance ?? []).map((a) => a.student_id));
 
   return (departments ?? []).map((dept) => {
     const deptEmployees = (employees ?? []).filter((e) => e.department_id === dept.id);

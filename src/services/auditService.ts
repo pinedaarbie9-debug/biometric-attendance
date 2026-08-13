@@ -18,7 +18,7 @@ export async function logSecurityEvent(params: {
   ipAddress?: string;
 }) {
   const { error } = await supabase.from('audit_logs').insert({
-    employee_id: params.employeeId ?? null,
+    student_id: params.employeeId ?? null,
     event_type: params.eventType,
     description: params.description,
     ip_address: params.ipAddress,

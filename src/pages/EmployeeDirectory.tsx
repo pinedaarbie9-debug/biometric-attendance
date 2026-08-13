@@ -5,10 +5,10 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import Badge from '../components/common/Badge';
 import { getEmployees, inviteEmployee } from '../services/employeeService';
 import { getDepartments } from '../services/departmentService';
-import type { Department, Employee } from '../types';
+import type { Department, Student } from '../types';
 
-export default function EmployeeDirectory() {
-  const [employees, setEmployees] = useState<Employee[]>([]);
+export default function StudentDirectory() {
+  const [students, setStudents] = useState<Student[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -17,11 +17,11 @@ export default function EmployeeDirectory() {
   async function load() {
     setLoading(true);
     try {
-      const [emp, dept] = await Promise.all([getEmployees(), getDepartments()]);
-      setEmployees(emp);
+      const [stu, dept] = await Promise.all([getEmployees(), getDepartments()]);
+      setStudents(stu);
       setDepartments(dept);
     } catch (err) {
-      toast.error('Failed to load employee directory');
+      toast.error('Failed to load student directory');
     } finally {
       setLoading(false);
     }
@@ -32,10 +32,10 @@ export default function EmployeeDirectory() {
   }, []);
 
   const filtered =
-    deptFilter === 'all' ? employees : employees.filter((e) => e.department_id === deptFilter);
+    deptFilter === 'all' ? students : students.filter((s) => s.department_id === deptFilter);
 
   return (
-    <DashboardLayout title="Employee Directory" subtitle="Enroll, update, or remove credentials in the database">
+    <DashboardLayout title="Student Directory" subtitle="Enroll, update, or remove credentials in the database">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative">
           <select
@@ -55,7 +55,7 @@ export default function EmployeeDirectory() {
           onClick={() => setShowAddModal(true)}
           className="flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
         >
-          <Plus size={16} /> Add Employee
+          <Plus size={16} /> Add Student
         </button>
       </div>
 
@@ -64,7 +64,7 @@ export default function EmployeeDirectory() {
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-3">Employee ID</th>
+                <th className="px-4 py-3">Student ID</th>
                 <th className="px-4 py-3">Full Name</th>
                 <th className="px-4 py-3">Department</th>
                 <th className="px-4 py-3">Role Title</th>
@@ -77,29 +77,29 @@ export default function EmployeeDirectory() {
                 <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
               )}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No employees found.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No students found.</td></tr>
               )}
-              {filtered.map((emp) => (
-                <tr key={emp.id} className="hover:bg-gray-50/60">
-                  <td className="px-4 py-3 font-medium text-gray-700">{emp.employee_code}</td>
+              {filtered.map((stu) => (
+                <tr key={stu.id} className="hover:bg-gray-50/60">
+                  <td className="px-4 py-3 font-medium text-gray-700">{stu.student_code}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-700">
-                        {emp.full_name.charAt(0)}
+                        {stu.full_name.charAt(0)}
                       </div>
-                      <span className="font-semibold text-gray-900">{emp.full_name}</span>
+                      <span className="font-semibold text-gray-900">{stu.full_name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{emp.department?.name ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-600">{emp.role_title ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-600">{stu.department?.name ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-600">{stu.role_title ?? '—'}</td>
                   <td className="px-4 py-3">
-                    <Badge tone={emp.biometric_status === 'registered' ? 'green' : 'yellow'}>
-                      {emp.biometric_status === 'registered' ? 'REGISTERED' : 'NOT REGISTERED'}
+                    <Badge tone={stu.biometric_status === 'registered' ? 'green' : 'yellow'}>
+                      {stu.biometric_status === 'registered' ? 'REGISTERED' : 'NOT REGISTERED'}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-gray-500">
-                    {emp.last_verified_at
-                      ? new Date(emp.last_verified_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+                    {stu.last_verified_at
+                      ? new Date(stu.last_verified_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
                       : '—'}
                   </td>
                 </tr>
@@ -110,7 +110,7 @@ export default function EmployeeDirectory() {
       </div>
 
       {showAddModal && (
-        <AddEmployeeModal
+        <AddStudentModal
           departments={departments}
           onClose={() => setShowAddModal(false)}
           onCreated={() => {
@@ -123,7 +123,7 @@ export default function EmployeeDirectory() {
   );
 }
 
-function AddEmployeeModal({
+function AddStudentModal({
   departments,
   onClose,
   onCreated,
@@ -150,10 +150,10 @@ function AddEmployeeModal({
         department_id: departmentId || undefined,
         password,
       });
-      toast.success('Employee added');
+      toast.success('Student added');
       onCreated();
     } catch (err: any) {
-      toast.error(err.message ?? 'Failed to add employee');
+      toast.error(err.message ?? 'Failed to add student');
     } finally {
       setSaving(false);
     }
@@ -163,15 +163,15 @@ function AddEmployeeModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-bold text-gray-900">Add Employee</h3>
+          <h3 className="text-base font-bold text-gray-900">Add Student</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-3">
           <input required placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)}
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary-500" />
-          <input required type="email" placeholder="Corporate email" value={email} onChange={(e) => setEmail(e.target.value)}
+          <input required type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary-500" />
-          <input placeholder="Role title (e.g. HR Specialist)" value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)}
+          <input placeholder="Role title (e.g. Grade 10 - Section A)" value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)}
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary-500" />
           <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary-500">
@@ -182,7 +182,7 @@ function AddEmployeeModal({
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary-500" />
           <button type="submit" disabled={saving}
             className="w-full rounded-lg bg-primary-600 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60">
-            {saving ? 'Adding…' : 'Add Employee'}
+            {saving ? 'Adding…' : 'Add Student'}
           </button>
         </form>
       </div>
