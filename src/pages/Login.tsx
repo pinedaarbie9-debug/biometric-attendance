@@ -129,7 +129,7 @@ export default function Login() {
           </div>
           <h1 className="text-xl font-extrabold tracking-tight text-gray-900">BCP</h1>
           <p className="mt-1 text-xs text-gray-500">
-            {isAdminPortal ? 'Admin Portal Access' :'Student Biometrics Attendamce'}
+            {isAdminPortal ? 'Admin Portal Access' :'Student Biometrics Attendance'}
           </p>
         </div>
 

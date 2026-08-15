@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Camera, CheckCircle2, AlertTriangle, LogIn, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -11,7 +12,8 @@ type ScanStatus = 'idle' | 'loading_models' | 'ready' | 'scanning' | 'success' |
 const MAX_FAILED_ATTEMPTS = 3;
 
 export default function BiometricTerminal() {
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [errorMsg, setErrorMsg] = useState('');
@@ -55,6 +57,16 @@ export default function BiometricTerminal() {
       stream?.getTracks().forEach((t) => t.stop());
     };
   }, []);
+
+  // Auto-redirect papunta sa dashboard pagkatapos mag-success
+  useEffect(() => {
+    if (status === 'success') {
+      const timer = setTimeout(() => {
+        navigate(isAdmin ? '/admin' : '/me');
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [status, isAdmin, navigate]);
 
   async function finalizeCheckIn(verificationMethod: 'fingerprint' | 'facial_id') {
     if (!profile) return;
@@ -112,8 +124,6 @@ export default function BiometricTerminal() {
     if (!profile) return;
     setFallbackLoading(true);
     try {
-      // Re-authenticate lang para i-verify na totoong may hawak ng password —
-      // hindi ito pumapalit ng session dahil parehong account din ang naka-login.
       const { error } = await supabase.auth.signInWithPassword({
         email: profile.email,
         password: fallbackPassword,
@@ -126,7 +136,7 @@ export default function BiometricTerminal() {
       }
 
       setFallbackPassword('');
-      await finalizeCheckIn('fingerprint'); // manual/fallback verification, walang 'password' sa enum kaya ito ang ginamit
+      await finalizeCheckIn('fingerprint');
     } catch (err: any) {
       toast.error(err.message ?? 'Verification failed');
     } finally {
@@ -153,10 +163,9 @@ export default function BiometricTerminal() {
 
         <div className="mb-4 text-center">
           <h2 className="text-base font-bold text-gray-900 sm:text-lg">{profile?.full_name}</h2>
-          <p className="text-xs text-gray-500 sm:text-sm">Employee ID: {profile?.student_code}</p>
+          <p className="text-xs text-gray-500 sm:text-sm">Student ID: {profile?.student_code}</p>
         </div>
 
-        {/* Check In / Check Out toggle */}
         <div className="mb-4 grid grid-cols-2 gap-2">
           <button
             onClick={() => setEventType('check_in')}
@@ -176,7 +185,6 @@ export default function BiometricTerminal() {
           </button>
         </div>
 
-        {/* Camera feed */}
         <div className="mb-4 flex justify-center">
           <video
             ref={videoRef}
@@ -270,17 +278,9 @@ export default function BiometricTerminal() {
             <div>
               <p className="text-sm font-semibold text-gray-900">Verification Successful</p>
               <p className="text-xs text-gray-600">{result}</p>
+              <p className="mt-1 text-[11px] text-gray-400">Babalik sa dashboard…</p>
             </div>
           </div>
-        )}
-
-        {status === 'success' && (
-          <button
-            onClick={() => { setStatus('ready'); setResult(null); setFailedAttempts(0); }}
-            className="mt-3 w-full rounded-lg border border-gray-200 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 sm:text-sm"
-          >
-            Mag-scan Ulit
-          </button>
         )}
       </div>
     </div>
